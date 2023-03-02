@@ -1,8 +1,10 @@
+#!/usr/bin/bash
+
 # Config >>=============================================================
 USE_COLOR=yes
 
 
-# Apply config >>=======================================================
+# Setup >>==============================================================
 
 if [[ $USE_COLOR = yes ]] ; then
     ESC=`printf "\e"`
@@ -15,6 +17,7 @@ if [[ $USE_COLOR = yes ]] ; then
     DGREEN="$ESC[32m"
     DYELLOW="$ESC[33m"
 
+    RED="$ESC[91m"
     GREEN="$ESC[92m"
     YELLOW="$ESC[93m"
     WHITE="$ESC[97m"
@@ -26,8 +29,21 @@ else
     SIGNATURE="Štigler"
 fi
 
+ERR="${RED}Error:$RESET"
+
 
 # Define functions >>===================================================
+
+function match-date() {
+    # version without extended regex:
+    # [0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]
+    # ksh should support extended regex
+
+    if [[ !("$1" =~ [0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])) ]] ; then
+        echo "$ERR Invalid date '$1'. Expected date in format YYYY-MM-DD"
+        exit 1
+    fi
+}
 
 function mole-help() {
     echo "Welcome in $GREEN${ITALIC}mole$RESET by $SIGNATURE
@@ -66,9 +82,38 @@ ${GREEN}DATE$RESET is in the format ${WHITE}YYYY-MM-DD$RESET"
 
 # Process arguments >>==================================================
 
-while getopts hg:mba arg ; do
+case "$1" in
+list)
+    ACTION=list
+    shift
+    ;;
+secret-log)
+    ACTION=slog
+    shift
+    ;;
+-h)
+    mole-help
+    if [ -z ${2+x} ] ; then
+        exit 0
+    else
+        echo "$ERR -h doesn't take any other arguments"
+        exit 1
+    fi
+    ;;
+*)  ;;
+esac
+
+while getopts g:mb:a: arg ; do
     case $arg in
-    h)  mole-help ;;
+    g)  GROUP=$OPTARG ;;
+    m)  MOST=true ;;
+    b)
+        BEFORE=$OPTARG
+        match-date $BEFORE
+        ;;
+    a)
+        AFTER=$OPTARG
+        match-date $AFTER
     *)  echo error ;;
     esac
 done

@@ -1,6 +1,8 @@
-# CONFIG
-
+# Config >>=============================================================
 USE_COLOR=yes
+
+
+# Apply config >>=======================================================
 
 if [[ $USE_COLOR = yes ]] ; then
     ESC=`printf "\e"`
@@ -23,6 +25,9 @@ $ESC[38;2;200;50;220me$ESC[38;2;190;50;230mr$ESC[0m"
 else
     SIGNATURE="Štigler"
 fi
+
+
+# Define functions >>===================================================
 
 function mole-help() {
     echo "Welcome in $GREEN${ITALIC}mole$RESET by $SIGNATURE
@@ -58,9 +63,12 @@ ${GREEN}Filters:$RESET
 ${GREEN}DATE$RESET is in the format ${WHITE}YYYY-MM-DD$RESET"
 }
 
+
+# Process arguments >>==================================================
+
 while getopts hg:mba arg ; do
     case $arg in
     h)  mole-help ;;
-    *) echo error ;;
+    *)  echo error ;;
     esac
 done

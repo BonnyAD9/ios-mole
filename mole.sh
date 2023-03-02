@@ -103,7 +103,7 @@ secret-log)
 *)  ;;
 esac
 
-while getopts g:mb:a: arg ; do
+while getopts :g:mb:a: arg ; do
     case $arg in
     g)  GROUP=$OPTARG ;;
     m)  MOST=true ;;
@@ -114,6 +114,7 @@ while getopts g:mb:a: arg ; do
     a)
         AFTER=$OPTARG
         match-date $AFTER
-    *)  echo error ;;
+        ;;
+    *)  echo "$ERR invalid option '$OPTARG'" ;;
     esac
 done

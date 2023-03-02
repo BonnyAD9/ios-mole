@@ -67,13 +67,13 @@ ${GREEN}Usage:$RESET
     is specified.
 
 ${GREEN}Filters:$RESET
-  ${YELLOW}-g ${WHITE}GROUP1${DARK}[,GROUP2[,...]]$RESET
+  $YELLOW-g ${WHITE}GROUP1${DARK}[,GROUP2[,...]]$RESET
     Filters only files that fall into any of the groups
 
-  ${YELLOW}-a ${WHITE}DATE$RESET
+  $YELLOW-a ${WHITE}DATE$RESET
     Filters out files opened before the given DATE
 
-  ${YELLOW}-b ${WHITE}DATE$RESET
+  $YELLOW-b ${WHITE}DATE$RESET
     Filters out files opened after the given DATE
 
 ${GREEN}DATE$RESET is in the format ${WHITE}YYYY-MM-DD$RESET"

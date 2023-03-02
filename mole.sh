@@ -115,7 +115,8 @@ while getopts :g:mb:a: arg ; do
         AFTER=$OPTARG
         match-date $AFTER
         ;;
-    *)  echo "$ERR invalid option '$OPTARG'"
+    *)
+        echo "$ERR invalid option '$OPTARG'"
         exit 1
         ;;
     esac

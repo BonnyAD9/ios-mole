@@ -295,6 +295,7 @@ function last_open() {
     }
 
     match($0, /.*,([^,]*)$/, a) {
+        # find the line with the latest date
         if (a[1] > max) {
             max = a[1];
             max_line = $0;
@@ -315,6 +316,7 @@ function most_open() {
     }
 
     match($0, /^.*,-,(.*)$/, a) {
+        # find line with the most dates
         n = split(a[0], s, ",");
         if (n > max) {
             max = n;
@@ -361,12 +363,14 @@ function list_files() {
     match($0, /(.*);,(.*),-,.*/, a) {
         names[count] = a[1]":";
 
+        # get group or the - character
         l = length(a[2]);
         if (l == 0)
             grps[count] = "-";
         else
             grps[count] = substr(a[2], 0, l - 1);
 
+        # find the longest filename
         l = length(a[1]);
         if (l > max_len)
             max_len = l;
@@ -375,6 +379,7 @@ function list_files() {
     }
 
     END {
+        # print all the files with the correct padding
         max_len++;
         for (i = 0; i < count; i++) {
             printf "%-"max_len"s %s\n", names[i], grps[i]
@@ -386,10 +391,12 @@ function list_files() {
 # get_secret_log
 function get_secret_log() {
     gawk 'match($0, /(.*);,.*,-,(.*)/, a) {
+        # print the filename
         printf "%s", a[1];
-        n=split(a[2], times, ",");
 
+        n=split(a[2], times, ",");
         for (i = 1; i <= n; i++) {
+            # convert to the correct datetime format
             ftime = strftime("%Y-%m-%d_%H-%M-%S", times[i]);
             printf ";%s", ftime;
         }

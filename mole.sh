@@ -167,9 +167,16 @@ ITEM=`realpath "${1:-./}"`
 
 
 # MOLE_RC Format:
+# <filename>;,<group names seprated by commas>,,-,<dates separated by commas>
 # full filename;,group1,group2,...,,-,date1,date2,...
 # full filename2;,group1,group2,...,,-,date1,date2,...
 # ...
+
+# - <filename> cannot contain the character ';'
+# - <group name> cannot contain the character ',' and cannot be '-'
+# - <date> is number of seconds since Epoch
+# - each file has its own line -> none of the fields can contain the
+#   newline character
 
 
 # Script functions >>===================================================

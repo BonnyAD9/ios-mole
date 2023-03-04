@@ -357,7 +357,7 @@ slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
 
     # create the command by piping filters and than execute it
     COMMAND="cat $MOLE_RC | files_in_dir $ITEM"
-    # Why I use '! -z' instead of '-n'? Because '-n' wasn't working!!
+    # Why I use '! -z' instead of '-n'? Because '-n' isn't working!!
     if [ ! -z ${GROUP:+x} ] ; then
         COMMAND="$COMMAND | files_in_group $GROUP"
     fi
@@ -367,8 +367,6 @@ slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
     if [ ! -z ${AFTER:+x} ] ; then
         COMMAND="$COMMAND | files_after $AFTER"
     fi
-
-    echo "$COMMAND"
 
     # select the file
     if [ ! -z ${MOST:+x} ] ; then

@@ -254,6 +254,11 @@ case "$ACTION" in
 list) echoe "$ERR the list option is not supported yet" 1 ;;
 slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
 *)
+    # create file if it doesn't exist
+    if [ ! -f "$ITEM" -a ! -d $ITEM ] ; then
+        touch "$ITEM"
+    fi
+
     # open and edit file
     if [ -f $ITEM ] ; then
         # check for invalid arguments for this action

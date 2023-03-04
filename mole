@@ -45,7 +45,7 @@ function echoe() {
 }
 
 # get the MOLE_RC file
-if [ -z  ${MOLE_RC:+x} ] ; then
+if [ -z ${MOLE_RC:+x} ] ; then
     echoe "$ERR MOLE_RC variable is not set" 1
 fi
 touch $MOLE_RC 2>/dev/null
@@ -122,6 +122,7 @@ ${GREEN}DATE$RESET is in the format ${WHITE}YYYY-MM-DD$RESET"
 
 # Process arguments >>==================================================
 
+# get the action
 case "$1" in
 list)
     ACTION=list
@@ -142,6 +143,7 @@ secret-log)
 *)  ;;
 esac
 
+# get the flags
 while getopts :g:mb:a: arg ; do
     case $arg in
     g)  GROUP=$OPTARG ;;
@@ -178,6 +180,7 @@ ITEM=`realpath "${1:-./}"`
 # - <date> is number of seconds since Epoch
 # - each file has its own line -> none of the fields can contain the
 #   newline character
+# - dates are always in order
 
 
 # Script functions >>===================================================
@@ -247,6 +250,78 @@ function rc_add_file() {
     fi
 }
 
+# gets all the files directly in the given directory (from stdin)
+# files_in_dir DIRECTORY
+function files_in_dir() {
+    _DIR=`grep_escape $1`
+    grep -e "^$_DIR/[^/]*;,.*$" -
+}
+
+# gets all the files with the given group (from stdin)
+# files_in_group GROUP
+function files_in_group() {
+    _GROUP=`grep_escape $1`
+    grep -e "^.*;*.,$_GROUP,.*,-,.*$" -
+}
+
+# gets all the files edited before the given date (from stdin)
+# files_before DATE
+function files_before() {
+    gawk "match(\$0, /^.*;.*,-,([^,]*).*$/, a) && a[1] <= $1"
+}
+
+# gets all the files edited after the given date (from stdin)
+# files_after DATE
+function files_after() {
+    gawk "match(\$0, /^.*,([^,]*)$/, a) && a[1] >= $1"
+}
+
+# gets the file that was opened last (from stdin)
+# last_open
+function last_open() {
+    gawk 'BEGIN {
+        max = 0;
+        max_line = "";
+    }
+
+    match($0, /.*,([^,]*)$/, a) {
+        if (a[1] > max) {
+            max = a[1];
+            max_line = $0;
+        }
+    }
+
+    END {
+        print max_line
+    }'
+}
+
+# gets the file that was opended the most times (from stdin)
+# most_open
+function most_open() {
+    gawk 'BEGIN {
+        max = 0;
+        max_line = "";
+    }
+
+    match($0, /^.*,-,(.*)$/, a) {
+        n = split(a[0], s, ",");
+        if (n > max) {
+            max = n;
+            max_line = $0;
+        }
+    }
+
+    END {
+        print max_line
+    }'
+}
+
+# gets file name (from stdin)
+# get_file
+function get_file() {
+    sed -r "s/^(.*);,.*$/\1/"
+}
 
 # The script >>=========================================================
 
@@ -276,5 +351,34 @@ slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
     fi
 
     # directory
-    echoe "$ERR the directory option is not supported yet"
+    if [ ! -d $ITEM ] ; then
+        echoe "$ERR '$ITEM' is not a directory" 1
+    fi
+
+    # create the command by piping filters and than execute it
+    COMMAND="cat $MOLE_RC | files_in_dir $ITEM"
+    # Why I use '! -z' instead of '-n'? Because '-n' wasn't working!!
+    if [ ! -z ${GROUP:+x} ] ; then
+        COMMAND="$COMMAND | files_in_group $GROUP"
+    fi
+    if [ ! -z ${BEFORE:+x} ] ; then
+        COMMAND="$COMMAND | files_before $BEFORE"
+    fi
+    if [ ! -z ${AFTER:+x} ] ; then
+        COMMAND="$COMMAND | files_after $AFTER"
+    fi
+
+    echo "$COMMAND"
+
+    # select the file
+    if [ ! -z ${MOST:+x} ] ; then
+        FILE=`eval $COMMAND | most_open | head -n 1 | get_file`
+    else
+        FILE=`eval $COMMAND | last_open | head -n 1 | get_file`
+    fi
+
+    # open the file
+    rc_add_file $FILE -
+    $EDI $FILE
+    exit $?
 esac

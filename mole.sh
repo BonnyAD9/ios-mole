@@ -1,12 +1,16 @@
 #!/usr/bin/bash
 
 # Config >>=============================================================
-USE_COLOR=yes
+echo "zakomentuj před odevzdáním!!"
+MOLE_USE_COLOR=yes
+MOLE_RC=./MOLE_RC
+EDITOR=vim
 
 
 # Setup >>==============================================================
 
-if [[ $USE_COLOR = yes ]] ; then
+# define used colors
+if [[ $MOLE_USE_COLOR = yes ]] ; then
     ESC=`printf "\e"`
 
     RESET="$ESC[0m"
@@ -29,22 +33,59 @@ else
     SIGNATURE="Štigler"
 fi
 
-ERR="${RED}Error:$RESET"
+# error message
+ERR="mole: ${RED}Error:$RESET"
+
+# echo to stderr
+function echoe() {
+    echo "$1" >&2
+}
+
+# get the MOLE_RC file
+if [ -z  ${MOLE_RC:+x} ] ; then
+    echoe "$ERR MOLE_RC variable is not set"
+    exit 1
+fi
+touch $MOLE_RC 2>/dev/null
+EC=$?
+if [[ $EC != 0 ]] ; then
+    echoe "$ERR couldn't access file '$MOLE_RC'"
+    exit $EC
+fi
+
+# get the editor
+EDI=${EDITOR:-${VISUAL:-vi}}
+type "$EDI" &>/dev/null
+EC=$?
+if [[ $EC != 0 ]] ; then
+    echoe "$ERR '$EDI' is doesn't exist"
+    exit $EC
+fi
 
 
 # Define functions >>===================================================
 
-function match-date() {
-    # version without extended regex:
-    # [0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]
-    # ksh should support extended regex
-
-    if [[ !("$1" =~ [0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])) ]] ; then
-        echo "$ERR Invalid date '$1'. Expected date in format YYYY-MM-DD"
+# Converts date to a number (exits on error)
+function date-to-num() {
+    # check for the basic format
+    if [[ !("$1" =~ [0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]) ]] ; then
+        echoe "$ERR Invalid date format: '$1'. Expected the format YYYY-MM-DD"
         exit 1
+    fi
+
+    # convert from the format to seconds since epoch
+    # stderr is redirected because the error message is handeled in the script
+    RETURN=`date -d"$1" +%s 2>/dev/null`
+
+    # return the error code on error
+    EC=$?
+    if [[ $EC != 0 ]] ; then
+        echoe "$ERR Invalid date '$1'"
+        exit $EC
     fi
 }
 
+# shows the help
 function mole-help() {
     echo "Welcome in $GREEN${ITALIC}mole$RESET by $SIGNATURE
 
@@ -93,10 +134,10 @@ secret-log)
     ;;
 -h)
     mole-help
-    if [ -z ${2+x} ] ; then
+    if [ -z ${2:+x} ] ; then
         exit 0
     else
-        echo "$ERR -h doesn't take any other arguments"
+        echoe "$ERR -h doesn't take any other arguments"
         exit 1
     fi
     ;;
@@ -108,16 +149,36 @@ while getopts :g:mb:a: arg ; do
     g)  GROUP=$OPTARG ;;
     m)  MOST=true ;;
     b)
-        BEFORE=$OPTARG
-        match-date $BEFORE
+        date-to-num $OPTARG
+        BEFORE=$RETURN
         ;;
     a)
-        AFTER=$OPTARG
-        match-date $AFTER
+        date-to-num $OPTARG
+        AFTER=$RETURN
         ;;
     *)
-        echo "$ERR invalid option '$OPTARG'"
+        echoe "$ERR invalid option '$OPTARG'"
         exit 1
         ;;
     esac
 done
+
+((OPTIND--))
+shift $OPTIND
+
+# the item to operate on (file or directory)
+ITEM=`realpath "${1:-./}"`
+
+
+# The script >>=========================================================
+
+# MOLE_RC Format:
+# full filename;group1,group2,...,-,date1,date2,...
+# full filename2;group1,group2,...,-,date1,date2,...
+# ...
+
+# adds file to MOLE_RC
+# rc-add-file FILENAME [GROUP]
+# function rc-add-file() {
+#
+# }

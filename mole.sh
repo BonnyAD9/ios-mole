@@ -3,7 +3,7 @@
 # Config >>=============================================================
 echo "zakomentuj před odevzdáním!!"
 MOLE_USE_COLOR=yes
-MOLE_RC=./MOLE_RC
+MOLE_RC=./test/MOLE_RC
 EDITOR=vim
 
 
@@ -36,21 +36,21 @@ fi
 # error message
 ERR="mole: ${RED}Error:$RESET"
 
-# echo to stderr
+# echo to stderr and exit
+# echoe MSG ERROR_CODE
 function echoe() {
     echo "$1" >&2
+    exit $2
 }
 
 # get the MOLE_RC file
 if [ -z  ${MOLE_RC:+x} ] ; then
-    echoe "$ERR MOLE_RC variable is not set"
-    exit 1
+    echoe "$ERR MOLE_RC variable is not set" 1
 fi
 touch $MOLE_RC 2>/dev/null
 EC=$?
 if [[ $EC != 0 ]] ; then
-    echoe "$ERR couldn't access file '$MOLE_RC'"
-    exit $EC
+    echoe "$ERR couldn't access file '$MOLE_RC'" $EC
 fi
 
 # get the editor
@@ -58,8 +58,7 @@ EDI=${EDITOR:-${VISUAL:-vi}}
 type "$EDI" &>/dev/null
 EC=$?
 if [[ $EC != 0 ]] ; then
-    echoe "$ERR '$EDI' is doesn't exist"
-    exit $EC
+    echoe "$ERR '$EDI' is doesn't exist" $EC
 fi
 
 
@@ -69,8 +68,8 @@ fi
 function date-to-num() {
     # check for the basic format
     if [[ !("$1" =~ [0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]) ]] ; then
-        echoe "$ERR Invalid date format: '$1'. Expected the format YYYY-MM-DD"
-        exit 1
+        echoe "$ERR Invalid date format: '$1'. Expected the format YYYY-MM-DD"\
+            1
     fi
 
     # convert from the format to seconds since epoch
@@ -80,8 +79,7 @@ function date-to-num() {
     # return the error code on error
     EC=$?
     if [[ $EC != 0 ]] ; then
-        echoe "$ERR Invalid date '$1'"
-        exit $EC
+        echoe "$ERR Invalid date '$1'" $EC
     fi
 }
 
@@ -137,8 +135,7 @@ secret-log)
     if [ -z ${2:+x} ] ; then
         exit 0
     else
-        echoe "$ERR -h doesn't take any other arguments"
-        exit 1
+        echoe "$ERR -h doesn't take any other arguments" 1
     fi
     ;;
 *)  ;;
@@ -157,8 +154,7 @@ while getopts :g:mb:a: arg ; do
         AFTER=$RETURN
         ;;
     *)
-        echoe "$ERR invalid option '$OPTARG'"
-        exit 1
+        echoe "$ERR invalid option '$OPTARG'" 1
         ;;
     esac
 done
@@ -170,15 +166,101 @@ shift $OPTIND
 ITEM=`realpath "${1:-./}"`
 
 
-# The script >>=========================================================
-
 # MOLE_RC Format:
-# full filename;group1,group2,...,-,date1,date2,...
-# full filename2;group1,group2,...,-,date1,date2,...
+# full filename;,group1,group2,...,,-,date1,date2,...
+# full filename2;,group1,group2,...,,-,date1,date2,...
 # ...
 
-# adds file to MOLE_RC
-# rc-add-file FILENAME [GROUP]
-# function rc-add-file() {
-#
-# }
+
+# Script functions >>===================================================
+
+# escapes the given string to be used in sed regex
+# reg-escape STRING
+function sed-escape() {
+    sed -e 's/\\/\\\\/g' -e 's/\./\\./g' -e 's/\*/\\*/g' -e 's/\[/\\[/g' \
+        -e 's/\//\\\//g' -e 's/\]/\\]/g' -e 's/\^/\\^/g' -e 's/\$/\\$/g' \
+        <<__END__
+$1
+__END__
+}
+
+# escapes the given string to be used in grep regex
+# reg-escape STRING
+function grep-escape() {
+    sed -e 's/\\/\\\\/g' -e 's/\./\\./g' -e 's/\*/\\*/g' -e 's/\[/\\[/g' \
+                         -e 's/\]/\\]/g' -e 's/\^/\\^/g' -e 's/\$/\\$/g' \
+        <<__END__
+$1
+__END__
+}
+
+# adds file to MOLE_RC if it doesn't exist with the current date
+# rc-add-file FILENAME GROUP
+# Set GROUP to '-' for no group
+function rc-add-file() {
+    # escape for use in regex
+    _FNAME_S=`sed-escape $1`
+    _FNAME_G=`grep-escape $1`
+    _GROUP_S=`sed-escape $2`
+    _GROUP_G=`grep-escape $2`
+
+    # check if the file is in the MOLE_RC
+    _COUNT=`grep -c "^$_FNAME_G;,.*$" "$MOLE_RC"`
+    # current date and time
+    _TIME=`date +%s`
+
+    # file not in MOLE_RC
+    if [[ $_COUNT == 0 ]] ; then
+        if [[ $2 == "-" ]] ; then
+            echo "$1;,,-,$_TIME" >>"$MOLE_RC"
+        else
+            echo "$1;,$2,,-,$_TIME" >>"$MOLE_RC"
+        fi
+        return
+    fi
+
+    # file is in MOLE_RC
+    if [[ $2 == "-" ]] ; then
+        # add time to the file
+        sed -r -i "s/^$_FNAME_S;,.*$/\0,$_TIME/" "$MOLE_RC"
+        return
+    fi
+
+    # check if the file already has the group
+    COUNT=`grep -c "^$_FNAME_G;.*,$_GROUP_G,.*,-,.*" "$MOLE_RC"`
+    if [[ $COUNT == 0 ]] ; then
+        # add the group
+        sed -r -i "s/^($_FNAME_S;,.*),-,(.*)$/\1$_GROUP_S,,-,\2,$_TIME/" \
+            "$MOLE_RC"
+    else
+        # add only the time
+        sed -r -i "s/^$_FNAME_S;,.*$/\0,$_TIME/" "$MOLE_RC"
+    fi
+}
+
+
+# The script >>=========================================================
+
+case "$ACTION" in
+list) echoe "$ERR the list option is not supported yet" 1 ;;
+slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
+*)
+    # open and edit file
+    if [ -f $ITEM ] ; then
+        # check for invalid arguments for this action
+        if [ -n "${MOST:+x}" ] ; then
+            echoe "$ERR invalid flag when opening file: -m" 1
+        elif [ -n "${BEFORE:+x}" ] ; then
+            echoe "$ERR invalid flag when opening file: -b" 1
+        elif [ -n "${AFTER:+x}" ] ; then
+            echoe "$ERR invalid flag when opening file: -a" 1
+        fi
+
+        rc-add-file $ITEM ${GROUP:--}
+        $EDI $ITEM
+        exit $?
+    fi
+
+    # directory
+    echoe "$ERR the directory option is not supported yet"
+esac

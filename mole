@@ -327,7 +327,6 @@ function get_file() {
 # get_filters
 function get_filters() {
     # create the command by piping filters
-    _COMMAND="cat $MOLE_RC | files_in_dir $ITEM"
     # Why I use '! -z' instead of '-n'? Because '-n' doesn't work!!
     if [ ! -z ${GROUP:+x} ] ; then
         _COMMAND="$_COMMAND | files_in_group $GROUP"
@@ -373,27 +372,68 @@ function list_files() {
     }'
 }
 
+# formats the files from stdin to secret log to stdout
+# get_secret_log
+function get_secret_log() {
+    gawk 'match($0, /(.*);,.*,-,(.*)/, a) {
+        printf "%s", a[1];
+        n=split(a[2], times, ",");
+
+        for (i = 1; i <= n; i++) {
+            ftime = strftime("%Y-%m-%d_%H-%M-%S", times[i]);
+            printf ";%s", ftime;
+        }
+        printf "\n"
+    }'
+}
+
 # The script >>=========================================================
 
 case "$ACTION" in
 list)
+    # check for invalid arguments
     if [ $2 ] ; then
         echoe "$ERR too many arguments" 1
     fi
-
     if [ $MOST ] ; then
         echoe "$ERR cannot use the '-m' flag with list" 1
     fi
-
     if [ ! -d $ITEM ] ; then
         echoe "$ERR '$ITEM' is not a directory" 1
     fi
 
-    COMMAND=`get_filters`
+    COMMAND="cat $MOLE_RC | files_in_dir $ITEM"`get_filters`
 
     eval "$COMMAND" | list_files | sort
     ;;
-slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
+slog)
+    # check for invalid arguments
+    if [ $MOST ] ; then
+        echoe "$ERR cannot use the '-m' flag with secret-log" 1
+    fi
+    if [ $GROUP ] ; then
+        echoe "$ERR cannot use the '-g' flag with secret-log" 1
+    fi
+
+    # add patterns to grep to match all the directories
+    COMMAND="cat $MOLE_RC | grep"
+    for arg in "$@"
+    do
+        DIR=`realpath $arg`
+        DIR=`grep_escape $DIR`
+        COMMAND="$COMMAND -e '^$DIR/[^/]*;.*$'"
+    done
+
+    # filter dates
+    COMMAND="$COMMAND"`get_filters`
+
+    # create the folder in case it doesn't exist
+    mkdir -p ~/.mole
+
+    # evaluate the command and compress the log
+    eval "$COMMAND" | get_secret_log | sort | bzip2 \
+        >~/.mole/log_$USER_`date +%Y-%m-%d_%H-%M-%S`.bz2
+    ;;
 *)
     if [ $2 ] ; then
         echoe "$ERR too many arguments" 1
@@ -425,7 +465,7 @@ slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
         echoe "$ERR '$ITEM' is not a directory" 1
     fi
 
-    COMMAND=`get_filters`
+    COMMAND="cat $MOLE_RC | files_in_dir $ITEM"`get_filters`
 
     # select the file
     if [ ! ${MOST:+x} ] ; then

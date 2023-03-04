@@ -183,7 +183,7 @@ ITEM=`realpath "${1:-./}"`
 # Script functions >>===================================================
 
 # escapes the given string to be used in sed regex
-# reg-escape STRING
+# sed_escape STRING
 function sed_escape() {
     sed -e 's/\\/\\\\/g' -e 's/\./\\./g' -e 's/\*/\\*/g' -e 's/\[/\\[/g' \
         -e 's/\//\\\//g' -e 's/\]/\\]/g' -e 's/\^/\\^/g' -e 's/\$/\\$/g' \
@@ -194,7 +194,7 @@ __END__
 }
 
 # escapes the given string to be used in grep regex
-# reg-escape STRING
+# grep_escape STRING
 function grep_escape() {
     sed -e 's/\\/\\\\/g' -e 's/\./\\./g' -e 's/\*/\\*/g' -e 's/\[/\\[/g' \
                          -e 's/\]/\\]/g' -e 's/\^/\\^/g' -e 's/\$/\\$/g' \

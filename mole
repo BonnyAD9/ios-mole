@@ -323,12 +323,82 @@ function get_file() {
     sed -r "s/^(.*);,.*$/\1/"
 }
 
+# returns command that filters the files
+# get_filters
+function get_filters() {
+    # create the command by piping filters
+    _COMMAND="cat $MOLE_RC | files_in_dir $ITEM"
+    # Why I use '! -z' instead of '-n'? Because '-n' doesn't work!!
+    if [ ! -z ${GROUP:+x} ] ; then
+        _COMMAND="$_COMMAND | files_in_group $GROUP"
+    fi
+    if [ ! -z ${BEFORE:+x} ] ; then
+        _COMMAND="$_COMMAND | files_before $BEFORE"
+    fi
+    if [ ! -z ${AFTER:+x} ] ; then
+        _COMMAND="$_COMMAND | files_after $AFTER"
+    fi
+    echo "$_COMMAND"
+}
+
+# formats the files given in stdin to stdout
+# list_files
+function list_files() {
+    gawk 'BEGIN {
+        count = 0;
+        max_len = 0;
+    }
+
+    match($0, /(.*);,(.*),-,.*/, a) {
+        names[count] = a[1]":";
+
+        l = length(a[2]);
+        if (l == 0)
+            grps[count] = "-";
+        else
+            grps[count] = substr(a[2], 0, l - 1);
+
+        l = length(a[1]);
+        if (l > max_len)
+            max_len = l;
+
+        count++;
+    }
+
+    END {
+        max_len++;
+        for (i = 0; i < count; i++) {
+            printf "%-"max_len"s %s\n", names[i], grps[i]
+        }
+    }'
+}
+
 # The script >>=========================================================
 
 case "$ACTION" in
-list) echoe "$ERR the list option is not supported yet" 1 ;;
+list)
+    if [ $2 ] ; then
+        echoe "$ERR too many arguments" 1
+    fi
+
+    if [ $MOST ] ; then
+        echoe "$ERR cannot use the '-m' flag with list" 1
+    fi
+
+    if [ ! -d $ITEM ] ; then
+        echoe "$ERR '$ITEM' is not a directory" 1
+    fi
+
+    COMMAND=`get_filters`
+
+    eval "$COMMAND" | list_files | sort
+    ;;
 slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
 *)
+    if [ $2 ] ; then
+        echoe "$ERR too many arguments" 1
+    fi
+
     # create file if it doesn't exist
     if [ ! -f "$ITEM" -a ! -d $ITEM ] ; then
         touch "$ITEM"
@@ -355,28 +425,22 @@ slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
         echoe "$ERR '$ITEM' is not a directory" 1
     fi
 
-    # create the command by piping filters and than execute it
-    COMMAND="cat $MOLE_RC | files_in_dir $ITEM"
-    # Why I use '! -z' instead of '-n'? Because '-n' isn't working!!
-    if [ ! -z ${GROUP:+x} ] ; then
-        COMMAND="$COMMAND | files_in_group $GROUP"
-    fi
-    if [ ! -z ${BEFORE:+x} ] ; then
-        COMMAND="$COMMAND | files_before $BEFORE"
-    fi
-    if [ ! -z ${AFTER:+x} ] ; then
-        COMMAND="$COMMAND | files_after $AFTER"
-    fi
+    COMMAND=`get_filters`
 
     # select the file
-    if [ ! -z ${MOST:+x} ] ; then
+    if [ ! ${MOST:+x} ] ; then
         FILE=`eval $COMMAND | most_open | head -n 1 | get_file`
     else
         FILE=`eval $COMMAND | last_open | head -n 1 | get_file`
+    fi
+
+    if [ ! $FILE ] ; then
+        echoe "$ERR no file matches the filters" 1
     fi
 
     # open the file
     rc_add_file $FILE -
     $EDI $FILE
     exit $?
+    ;;
 esac

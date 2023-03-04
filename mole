@@ -54,13 +54,23 @@ if [[ $EC != 0 ]] ; then
     echoe "$ERR couldn't access file '$MOLE_RC'" $EC
 fi
 
+# checks if the given command exists
+# check_installed COMMAND
+function check_installed() {
+    type "$1" &>/dev/null
+    EC=$?
+    if [[ $EC != 0 ]] ; then
+        echoe "$ERR '$1' is not installed" $EC
+    fi
+}
+
 # get the editor
 EDI=${EDITOR:-${VISUAL:-vi}}
-type "$EDI" &>/dev/null
-EC=$?
-if [[ $EC != 0 ]] ; then
-    echoe "$ERR '$EDI' is doesn't exist" $EC
-fi
+check_installed $EDI
+
+# check if required utilities are installed
+check_installed realpath
+check_installed gawk
 
 
 # Define functions >>===================================================

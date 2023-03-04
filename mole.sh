@@ -5,6 +5,7 @@ echo "zakomentuj před odevzdáním!!"
 MOLE_USE_COLOR=yes
 MOLE_RC=./test/MOLE_RC
 EDITOR=vim
+POSIXLY_CORRECT=yes
 
 
 # Setup >>==============================================================
@@ -65,7 +66,7 @@ fi
 # Define functions >>===================================================
 
 # Converts date to a number (exits on error)
-function date-to-num() {
+function date_to_num() {
     # check for the basic format
     if [[ !("$1" =~ [0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]) ]] ; then
         echoe "$ERR Invalid date format: '$1'. Expected the format YYYY-MM-DD"\
@@ -84,7 +85,7 @@ function date-to-num() {
 }
 
 # shows the help
-function mole-help() {
+function mole_help() {
     echo "Welcome in $GREEN${ITALIC}mole$RESET by $SIGNATURE
 
 ${GREEN}Usage:$RESET
@@ -131,7 +132,7 @@ secret-log)
     shift
     ;;
 -h)
-    mole-help
+    mole_help
     if [ -z ${2:+x} ] ; then
         exit 0
     else
@@ -146,11 +147,11 @@ while getopts :g:mb:a: arg ; do
     g)  GROUP=$OPTARG ;;
     m)  MOST=true ;;
     b)
-        date-to-num $OPTARG
+        date_to_num $OPTARG
         BEFORE=$RETURN
         ;;
     a)
-        date-to-num $OPTARG
+        date_to_num $OPTARG
         AFTER=$RETURN
         ;;
     *)
@@ -183,7 +184,7 @@ ITEM=`realpath "${1:-./}"`
 
 # escapes the given string to be used in sed regex
 # reg-escape STRING
-function sed-escape() {
+function sed_escape() {
     sed -e 's/\\/\\\\/g' -e 's/\./\\./g' -e 's/\*/\\*/g' -e 's/\[/\\[/g' \
         -e 's/\//\\\//g' -e 's/\]/\\]/g' -e 's/\^/\\^/g' -e 's/\$/\\$/g' \
         -e 's/(/\\(/g'   -e 's/)/\\)/g' \
@@ -194,7 +195,7 @@ __END__
 
 # escapes the given string to be used in grep regex
 # reg-escape STRING
-function grep-escape() {
+function grep_escape() {
     sed -e 's/\\/\\\\/g' -e 's/\./\\./g' -e 's/\*/\\*/g' -e 's/\[/\\[/g' \
                          -e 's/\]/\\]/g' -e 's/\^/\\^/g' -e 's/\$/\\$/g' \
         <<__END__
@@ -203,14 +204,14 @@ __END__
 }
 
 # adds file to MOLE_RC if it doesn't exist with the current date
-# rc-add-file FILENAME GROUP
+# rc_add_file FILENAME GROUP
 # Set GROUP to '-' for no group
-function rc-add-file() {
+function rc_add_file() {
     # escape for use in regex
-    _FNAME_S=`sed-escape $1`
-    _FNAME_G=`grep-escape $1`
-    _GROUP_S=`sed-escape $2`
-    _GROUP_G=`grep-escape $2`
+    _FNAME_S=`sed_escape $1`
+    _FNAME_G=`grep_escape $1`
+    _GROUP_S=`sed_escape $2`
+    _GROUP_G=`grep_escape $2`
 
     # check if the file is in the MOLE_RC
     _COUNT=`grep -c "^$_FNAME_G;,.*$" "$MOLE_RC"`
@@ -264,7 +265,7 @@ slog) echoe "$ERR the secret-log is not supported yet" 1 ;;
             echoe "$ERR invalid flag when opening file: -a" 1
         fi
 
-        rc-add-file $ITEM ${GROUP:--}
+        rc_add_file $ITEM ${GROUP:--}
         $EDI $ITEM
         exit $?
     fi

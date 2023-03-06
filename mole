@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 
 # Config >>=============================================================
-#echo "zakomentuj před odevzdáním!!"
-#MOLE_USE_COLOR=yes
-#MOLE_RC=./test/MOLE_RC
-#EDITOR=vim
+echo "zakomentuj před odevzdáním!!"
+MOLE_USE_COLOR=yes
+MOLE_RC=./test/MOLE_RC
+EDITOR=vim
 POSIXLY_CORRECT=yes
 
 
@@ -180,7 +180,7 @@ ITEM=`realpath "${1:-./}"`
 
 
 # MOLE_RC Format:
-# <filename>;,<group names seprated by commas>,,-,<dates separated by commas>
+# <filename>;,<group names followed by commas>,-,<dates separated by commas>
 # full filename;,group1,group2,...,,-,date1,date2,...
 # full filename2;,group1,group2,...,,-,date1,date2,...
 # ...
@@ -268,6 +268,7 @@ function files_in_dir() {
 }
 
 # gets all the files with the given group (from stdin)
+# this function is currently not used
 # files_in_group GROUP
 function files_in_group() {
     _GROUP=`grep_escape $1`
@@ -335,13 +336,33 @@ function get_file() {
     sed -r "s/^(.*);,.*$/\1/"
 }
 
+# creates filter for all the files in one of the groups
+# get_group_filters GROUPS
+function files_in_groups() {
+    awk 'BEGIN {
+        gcount = split("'$1'", groups, ",");
+    }
+
+    match($0, /^.*;,(.*),,-,.*$/, a) {
+        glen = split(a[1], gs, ",");
+        for (i = 1; i <= glen; i++) {
+            for (j = 0; j <= gcount; j++) {
+                if (gs[i] == groups[j]) {
+                    print $0;
+                    next;
+                }
+            }
+        }
+    }'
+}
+
 # returns command that filters the files
 # get_filters
 function get_filters() {
     # create the command by piping filters
     # Why I use '! -z' instead of '-n'? Because '-n' doesn't work!!
     if [ ! -z ${GROUP:+x} ] ; then
-        _COMMAND="$_COMMAND | files_in_group $GROUP"
+        _COMMAND="$_COMMAND | files_in_groups $GROUP"
     fi
     if [ ! -z ${BEFORE:+x} ] ; then
         _COMMAND="$_COMMAND | files_before $BEFORE"

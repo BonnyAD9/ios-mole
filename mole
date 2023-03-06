@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 
 # Config >>=============================================================
-echo "zakomentuj před odevzdáním!!"
-MOLE_USE_COLOR=yes
-MOLE_RC=./test/MOLE_RC
-EDITOR=vim
+#echo "zakomentuj před odevzdáním!!"
+#MOLE_USE_COLOR=yes
+#MOLE_RC=./test/MOLE_RC
+#EDITOR=vim
 POSIXLY_CORRECT=yes
 
 
@@ -429,8 +429,18 @@ function get_secret_log() {
 # sort_by_last_used
 function sort_by_last_used() {
     sed -r 's/^(.*);,.*,([^,]*)$/\2:\1/' \
-        | sort -r -t: -k1 \
-        | sed -r 's/^[^,]*:(.*)$/\1/'
+        | sort -r -t: -k1 -n \
+        | sed -r 's/^[^:]*:(.*)$/\1/'
+}
+
+# sorts the files based on how often they were open
+# sort_by_count_opened
+function sort_by_count_opened() {
+    gawk 'match($0, /^(.*);,.*,-,(.*)$/, a) {
+        n = split(a[2], spl, ",");
+        print n ":" a[1];
+    }'  | sort -r -t: -k1 -n \
+        | sed -r 's/^.*:(.*)$/\1/'
 }
 
 # gets the first existing file (from stdin to stdout)
@@ -526,7 +536,7 @@ slog)
 
     # select the file
     if [ ${MOST} ] ; then
-        FILE=`eval $COMMAND | most_open | head -n 1 | get_file`
+        FILE=`eval $COMMAND | sort_by_count_opened | get_first_existing`
     else
         FILE=`eval $COMMAND | sort_by_last_used | get_first_existing`
     fi

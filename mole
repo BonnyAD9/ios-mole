@@ -1,10 +1,12 @@
 #!/usr/bin/bash
 
 # Config >>=============================================================
-echo "zakomentuj před odevzdáním!!"
-MOLE_USE_COLOR=yes
-MOLE_RC=./test/MOLE_RC
-EDITOR=vim
+#echo "zakomentuj před odevzdáním!!"
+#MOLE_RC=./test/MOLE_RC
+#EDITOR=vim
+
+#MOLE_USE_COLOR=yes # uncomment this to use ANSI escape codes
+
 POSIXLY_CORRECT=yes
 
 

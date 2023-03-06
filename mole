@@ -154,19 +154,31 @@ secret-log)
 esac
 
 # get the flags
-while getopts :g:mb:a:r arg ; do
+while getopts :g:mb:a:rd arg ; do
     case $arg in
-    g)  GROUP=$OPTARG ;;
-    m)  MOST=true ;;
+    g)
+        if [ "$DFLAG" ] ; then
+            echoe "$ERR flags '-d' and '-g' are exclusive"
+        fi
+        GROUP="$OPTARG"
+        ;;
+    m)  MOST=true
+        ;;
     b)
-        date_to_num $OPTARG
+        date_to_num "$OPTARG"
         BEFORE=$RETURN
         ;;
     a)
-        date_to_num $OPTARG
+        date_to_num "$OPTARG"
         AFTER=$RETURN
         ;;
     r)  RECURSIVE=yes ;;
+    d)
+        if [ "$GROUP" ] ; then
+            echoe "$ERR flags '-d' and '-g' are exclusive"
+        fi
+        DFLAG=yes
+        ;;
     *)
         echoe "$ERR invalid option '$OPTARG'" 1
         ;;
@@ -304,6 +316,12 @@ function files_in_groups() {
     }'
 }
 
+# gets all the files that don't have any group
+# files_not_in_group
+function files_not_in_group() {
+    grep "^.*;,,-,.*$" -
+}
+
 # returns command that filters the files
 # get_filters
 function get_filters() {
@@ -311,6 +329,8 @@ function get_filters() {
     # Why I use '! -z' instead of '-n'? Because '-n' doesn't work!!
     if [ ! -z ${GROUP:+x} ] ; then
         _COMMAND="$_COMMAND | files_in_groups $GROUP"
+    elif [[ $DFLAG == yes ]] ; then
+        _COMMAND="$_COMMAND | files_not_in_group"
     fi
     if [ ! -z ${BEFORE:+x} ] ; then
         _COMMAND="$_COMMAND | files_before $BEFORE"

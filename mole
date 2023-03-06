@@ -1,5 +1,11 @@
 #!/usr/bin/bash
 
+# Author: Jakub Antonín Štigler (xstigl00)
+# Project: ios - mole
+# Date: 6.3. 2023
+# supports the '-r' and '-d' flags
+# to use ANSI escape codes define variable 'MOLE_USE_COLOR=yes'
+
 # Config >>=============================================================
 #echo "zakomentuj před odevzdáním!!"
 #MOLE_RC=./test/MOLE_RC

@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 
 # Config >>=============================================================
-#echo "zakomentuj před odevzdáním!!"
-#MOLE_USE_COLOR=yes
-#MOLE_RC=./test/MOLE_RC
-#EDITOR=vim
+echo "zakomentuj před odevzdáním!!"
+MOLE_USE_COLOR=yes
+MOLE_RC=./test/MOLE_RC
+EDITOR=vim
 POSIXLY_CORRECT=yes
 
 
@@ -425,6 +425,25 @@ function get_secret_log() {
     }'
 }
 
+# sorts the files in the stdin by the last used and outputs only filenames
+# sort_by_last_used
+function sort_by_last_used() {
+    sed -r 's/^(.*);,.*,([^,]*)$/\2:\1/' \
+        | sort -r -t: -k1 \
+        | sed -r 's/^[^,]*:(.*)$/\1/'
+}
+
+# gets the first existing file (from stdin to stdout)
+# get_first_existing
+function get_first_existing() {
+    gawk '{
+        if (system("[ -f '"'"'" $0 "'"'"' ]") == 0) {
+            print $0;
+            exit;
+        }
+    }'
+}
+
 # The script >>=========================================================
 
 case "$ACTION" in
@@ -477,10 +496,10 @@ slog)
         echoe "$ERR too many arguments" 1
     fi
 
-    # create file if it doesn't exist
-    if [ ! -f "$ITEM" -a ! -d $ITEM ] ; then
-        touch "$ITEM"
-    fi
+    # create file if it doesn't exist (UPDATED 6.3 - changed)
+    # if [ ! -f "$ITEM" -a ! -d $ITEM ] ; then
+    #     touch "$ITEM"
+    # fi
 
     # open and edit file
     if [ -f $ITEM ] ; then
@@ -500,19 +519,19 @@ slog)
 
     # directory
     if [ ! -d $ITEM ] ; then
-        echoe "$ERR '$ITEM' is not a directory" 1
+        echoe "$ERR '$ITEM' deoesn't exist" 1
     fi
 
     COMMAND="cat $MOLE_RC | files_in_dir $ITEM"`get_filters`
 
     # select the file
-    if [ ! ${MOST:+x} ] ; then
+    if [ ${MOST} ] ; then
         FILE=`eval $COMMAND | most_open | head -n 1 | get_file`
     else
-        FILE=`eval $COMMAND | last_open | head -n 1 | get_file`
+        FILE=`eval $COMMAND | sort_by_last_used | get_first_existing`
     fi
 
-    if [ ! $FILE ] ; then
+    if [ ! "$FILE" ] ; then
         echoe "$ERR no file matches the filters" 1
     fi
 

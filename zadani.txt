@@ -71,7 +71,7 @@ Poznámky
 Můžete předpokládat, že nebude zadána skupina se jménem - a že názvy skupin nebudou obsahovat znak čárky
 Můžete předpokládat, že názvy souborů (ani jejich cesty) nebudou obsahovat znaky středníku nebo dvojtečky.
 Skript nebere v potaz otevření nebo editace, které byly provedeny mimo skript mole.
-Stejně tak skript nebere v potaz soubory, se kterými dříve počítal a které jsou nyní smazané.
+Stejně tak pro příkaz mole [-m] [FILTERS] [DIRECTORY] skript nebere v potaz soubory, se kterými dříve počítal a které jsou nyní smazané (u ostatních příkazů není potřeba kontrolovat existenci souboru). Například, pokud byl posledně editovaný soubor smazán, volání mole otevře předposledně editovaný soubor, pokud byl i ten smazán, bude otevřen předpředposledně editovaný soubor, atp. UPDATED 6.3.
 Při rozhodování relativní cesty adresáře je doporučené používat reálnou cestu (realpath). Důvod např.:
 $ mole .
 $ mole `pwd`
@@ -255,4 +255,3 @@ $ mole -m -d -b 2023-02-20 ~
 ... # spustí se editace souboru ~/.indent.pro nebo ~/.viminfo
 $ mole -m -d -g bash -b 2023-02-20 ~
 ... # ! chyba, přepínače -d a -g jsou výlučné
-Built with Pandoc using pandoc-bootstrap theme

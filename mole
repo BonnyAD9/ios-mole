@@ -267,14 +267,6 @@ function files_in_dir() {
     grep -e "^$_DIR/[^/]*;,.*$" -
 }
 
-# gets all the files with the given group (from stdin)
-# this function is currently not used
-# files_in_group GROUP
-function files_in_group() {
-    _GROUP=`grep_escape $1`
-    grep -e "^.*;*.,$_GROUP,.*,-,.*$" -
-}
-
 # gets all the files edited before the given date (from stdin)
 # files_before DATE
 function files_before() {
@@ -287,57 +279,8 @@ function files_after() {
     gawk "match(\$0, /^.*,([^,]*)$/, a) && a[1] >= $1"
 }
 
-# gets the file that was opened last (from stdin)
-# last_open
-function last_open() {
-    gawk 'BEGIN {
-        max = 0;
-        max_line = "";
-    }
-
-    match($0, /.*,([^,]*)$/, a) {
-        # find the line with the latest date
-        if (a[1] > max) {
-            max = a[1];
-            max_line = $0;
-        }
-    }
-
-    END {
-        print max_line
-    }'
-}
-
-# gets the file that was opended the most times (from stdin)
-# most_open
-function most_open() {
-    gawk 'BEGIN {
-        max = 0;
-        max_line = "";
-    }
-
-    match($0, /^.*,-,(.*)$/, a) {
-        # find line with the most dates
-        n = split(a[0], s, ",");
-        if (n > max) {
-            max = n;
-            max_line = $0;
-        }
-    }
-
-    END {
-        print max_line
-    }'
-}
-
-# gets file name (from stdin)
-# get_file
-function get_file() {
-    sed -r "s/^(.*);,.*$/\1/"
-}
-
 # creates filter for all the files in one of the groups
-# get_group_filters GROUPS
+# files_in_group GROUPS
 function files_in_groups() {
     awk 'BEGIN {
         gcount = split("'$1'", groups, ",");

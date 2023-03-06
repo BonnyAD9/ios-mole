@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 
 # Config >>=============================================================
-#echo "zakomentuj před odevzdáním!!"
-#MOLE_USE_COLOR=yes
-#MOLE_RC=./test/MOLE_RC
-#EDITOR=vim
+echo "zakomentuj před odevzdáním!!"
+MOLE_USE_COLOR=yes
+MOLE_RC=./test/MOLE_RC
+EDITOR=vim
 POSIXLY_CORRECT=yes
 
 
@@ -154,7 +154,7 @@ secret-log)
 esac
 
 # get the flags
-while getopts :g:mb:a: arg ; do
+while getopts :g:mb:a:r arg ; do
     case $arg in
     g)  GROUP=$OPTARG ;;
     m)  MOST=true ;;
@@ -166,6 +166,7 @@ while getopts :g:mb:a: arg ; do
         date_to_num $OPTARG
         AFTER=$RETURN
         ;;
+    r)  RECURSIVE=yes ;;
     *)
         echoe "$ERR invalid option '$OPTARG'" 1
         ;;
@@ -264,7 +265,11 @@ function rc_add_file() {
 # files_in_dir DIRECTORY
 function files_in_dir() {
     _DIR=`grep_escape $1`
-    grep -e "^$_DIR/[^/]*;,.*$" -
+    if [ $RECURSIVE ] ; then
+        grep -e "^$_DIR/.*$" -
+    else
+        grep -e "^$_DIR/[^/]*;,.*$" -
+    fi
 }
 
 # gets all the files edited before the given date (from stdin)
@@ -427,11 +432,15 @@ slog)
 
     # add patterns to grep to match all the directories
     COMMAND="cat $MOLE_RC | grep"
-    for arg in "$@"
+    for arg in "${@:-./}"
     do
         DIR=`realpath $arg`
         DIR=`grep_escape $DIR`
-        COMMAND="$COMMAND -e '^$DIR/[^/]*;.*$'"
+        if [ $RECURSIVE ] ; then
+            COMMAND="$COMMAND -e '^$DIR/.*$'"
+        else
+            COMMAND="$COMMAND -e '^$DIR/[^/]*;.*$'"
+        fi
     done
 
     # filter dates
@@ -441,18 +450,19 @@ slog)
     mkdir -p ~/.mole
 
     # evaluate the command and compress the log
-    eval "$COMMAND" | get_secret_log | sort | bzip2 \
-        >~/.mole/log_$USER_`date +%Y-%m-%d_%H-%M-%S`.bz2
+    LOG=`eval "$COMMAND" | get_secret_log | sort`
+    if [ ! "$LOG" ] ; then
+        echoe "$ERR There are no files in that directories. No log created" 1
+    fi
+
+    bzip2 >~/.mole/log_$USER_`date +%Y-%m-%d_%H-%M-%S`.bz2 <<__END__
+$LOG
+__END__
     ;;
 *)
     if [ $2 ] ; then
         echoe "$ERR too many arguments" 1
     fi
-
-    # create file if it doesn't exist (UPDATED 6.3 - changed)
-    # if [ ! -f "$ITEM" -a ! -d $ITEM ] ; then
-    #     touch "$ITEM"
-    # fi
 
     # open and edit file
     if [ -f $ITEM ] ; then

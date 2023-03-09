@@ -83,6 +83,7 @@ check_installed grep
 check_installed sed
 check_installed date
 check_installed awk
+check_installed bzip2
 
 
 # Define functions >>===================================================

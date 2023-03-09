@@ -7,11 +7,11 @@
 # to use ANSI escape codes define variable 'MOLE_USE_COLOR=yes'
 
 # Config >>=============================================================
-#echo "zakomentuj před odevzdáním!!"
-#MOLE_RC=./test/MOLE_RC
-#EDITOR=vim
+echo "zakomentuj před odevzdáním!!"
+MOLE_RC=./test/MOLE_RC
+EDITOR=vim
 
-#MOLE_USE_COLOR=yes # uncomment this to use ANSI escape codes
+MOLE_USE_COLOR=yes # uncomment this to use ANSI escape codes
 
 POSIXLY_CORRECT=yes
 
@@ -79,6 +79,10 @@ check_installed $EDI
 # check if required utilities are installed
 check_installed realpath
 check_installed gawk
+check_installed grep
+check_installed sed
+check_installed date
+check_installed awk
 
 
 # Define functions >>===================================================

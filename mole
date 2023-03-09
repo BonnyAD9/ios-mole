@@ -7,11 +7,11 @@
 # to use ANSI escape codes define variable 'MOLE_USE_COLOR=yes'
 
 # Config >>=============================================================
-echo "zakomentuj před odevzdáním!!"
-MOLE_RC=./test/MOLE_RC
-EDITOR=vim
+#echo "zakomentuj před odevzdáním!!"
+#MOLE_RC=./test/MOLE_RC
+#EDITOR=vim
 
-MOLE_USE_COLOR=yes # uncomment this to use ANSI escape codes
+#MOLE_USE_COLOR=yes # uncomment this to use ANSI escape codes
 
 POSIXLY_CORRECT=yes
 
@@ -368,9 +368,18 @@ function list_files() {
         # get group or the - character
         l = length(a[2]);
         if (l == 0)
-            grps[count] = "-";
+            g = "-";
         else
-            grps[count] = substr(a[2], 0, l - 1);
+            g = substr(a[2], 0, l - 1);
+
+        # sort the group
+        split(g, gspl, ",");
+        n = asort(gspl);
+        g = "";
+        for (i = 1; i <= n; i++)
+            g = g "," gspl[i];
+
+        grps[count] = g;
 
         # find the longest filename
         l = length(a[1]);

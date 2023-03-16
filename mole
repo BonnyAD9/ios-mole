@@ -376,8 +376,11 @@ function list_files() {
         split(g, gspl, ",");
         n = asort(gspl);
         g = "";
-        for (i = 1; i <= n; i++)
-            g = g "," gspl[i];
+        for (i = 1; i <= n; i++) {
+            if (i != 1)
+                g = g ",";
+            g = g gspl[i];
+        }
 
         grps[count] = g;
 
